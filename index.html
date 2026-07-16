@@ -116,7 +116,7 @@
             box-shadow: 0 0 120px rgba(255, 68, 68, 1), 0 0 70px rgba(139, 0, 0, 0.85);
         }
 
-        iframe, video {
+        iframe, video, audio {
             width: 100%;
             height: 100%;
             display: block;
@@ -318,7 +318,8 @@
         <div class="player-wrapper" id="playerWrapper">
             <iframe id="ytplayer" width="100%" height="100%" style="display:none;" 
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            <video id="localplayer" controls playsinline style="width:100%; height:100%;"></video>
+            <video id="localVideo" controls playsinline style="width:100%; height:100%; display:none;"></video>
+            <audio id="localAudio" controls style="width:100%; display:none;"></audio>
         </div>
 
         <!-- CONTROLS -->
@@ -396,27 +397,20 @@
 
     <script>
         const ytPlayer = document.getElementById('ytplayer');
-        const localPlayer = document.getElementById('localplayer');
+        const localVideo = document.getElementById('localVideo');
+        const localAudio = document.getElementById('localAudio');
         const playerWrapper = document.getElementById('playerWrapper');
         const nowPlaying = document.getElementById('nowPlaying');
         const libraryPanel = document.getElementById('libraryPanel');
-        const waveformCanvas = document.getElementById('waveformViz');
-        const waveCtx = waveformCanvas.getContext('2d');
-        const particleCanvas = document.getElementById('particleCanvas');
-        const particleCtx = particleCanvas.getContext('2d');
 
         function resizeCanvases() {
-            particleCanvas.width = window.innerWidth;
-            particleCanvas.height = window.innerHeight;
-            waveformCanvas.width = waveformCanvas.parentElement.clientWidth;
-            waveformCanvas.height = 60;
+            // waveform etc if needed
         }
-        resizeCanvases();
         window.addEventListener('resize', resizeCanvases);
 
-        // FULL MASTER STREAM MATRIX - ORIGINAL YOUTUBE UNTOUCHED + ALL NEW MEDIA
+        // FULL MASTER STREAM MATRIX - ORIGINAL YOUTUBE UNTOUCHED
         let tracks = [ 
-            // ORIGINAL YOUTUBE - UNCHANGED ORDER
+            // ORIGINAL YOUTUBE - EXACT ORDER, UNCHANGED
             { title: "DEATHSONG FREQUENCY", src: "https://youtu.be/MtmpmwXnEgo", type: "youtube" },
             { title: "VulgarGrace", src: "https://youtu.be/aYKwrtwV7QA", type: "youtube" },
             { title: "Stormbound", src: "https://youtu.be/pzr2qTTnnhs", type: "youtube" },
@@ -427,7 +421,7 @@
             { title: "High as Fuck", src: "https://youtu.be/U5eSF0bQQvI", type: "youtube" },
             { title: "TranstesticularMindVirus", src: "https://youtu.be/hYB5BvK7afg", type: "youtube" },
 
-            // NEW MP4 VIDEOS (in screenshot order)
+            // NEW MP4 VIDEOS
             { title: "redknight", src: "redknight.mp4", type: "video" },
             { title: "pattycake", src: "pattycake.mp4", type: "video" },
             { title: "nobody", src: "nobody.mp4", type: "video" },
@@ -473,7 +467,7 @@
 
         function buildLibrary() {
             libraryPanel.innerHTML = `<h3 style="margin-bottom:10px;color:#ff6666;">RITUAL LIBRARY</h3>`;
-            tracks.forEach((track, index) => {
+            tracks.forEach((track) => {
                 const item = document.createElement('div');
                 item.className = 'library-item';
                 let icon = 'fa-youtube';
@@ -494,7 +488,8 @@
             if (element) element.classList.add('active');
 
             ytPlayer.style.display = 'none';
-            localPlayer.style.display = 'none';
+            localVideo.style.display = 'none';
+            localAudio.style.display = 'none';
 
             if (track.type === 'youtube') {
                 let embedUrl = track.src;
@@ -506,12 +501,16 @@
                 ytPlayer.src = embedUrl + "?autoplay=1&modestbranding=1&rel=0";
                 ytPlayer.style.display = 'block';
                 nowPlaying.innerHTML = `${track.title}<br><span class="status">YouTube Video Stream</span>`;
-            } else {
-                localPlayer.src = track.src;
-                localPlayer.style.display = 'block';
-                const statusText = track.type === 'audio' ? 'Local Audio Track' : 'Local Video';
-                nowPlaying.innerHTML = `\( {track.title}<br><span class="status"> \){statusText}</span>`;
-                localPlayer.play().catch(() => {});
+            } else if (track.type === 'video') {
+                localVideo.src = track.src;
+                localVideo.style.display = 'block';
+                nowPlaying.innerHTML = `${track.title}<br><span class="status">Local Video</span>`;
+                localVideo.play().catch(() => {});
+            } else { // audio
+                localAudio.src = track.src;
+                localAudio.style.display = 'block';
+                nowPlaying.innerHTML = `${track.title}<br><span class="status">Local Audio Track</span>`;
+                localAudio.play().catch(() => {});
             }
         }
 
@@ -522,18 +521,24 @@
             }
             if (currentTrack.type === 'youtube') {
                 ytPlayer.src = ytPlayer.src;
+            } else if (currentTrack.type === 'video') {
+                if (localVideo.paused) localVideo.play();
+                else localVideo.pause();
             } else {
-                if (localPlayer.paused) localPlayer.play();
-                else localPlayer.pause();
+                if (localAudio.paused) localAudio.play();
+                else localAudio.pause();
             }
         }
 
         function stopMedia() {
             if (currentTrack && currentTrack.type === 'youtube') {
                 ytPlayer.src = '';
-            } else {
-                localPlayer.pause();
-                localPlayer.currentTime = 0;
+            } else if (currentTrack && currentTrack.type === 'video') {
+                localVideo.pause();
+                localVideo.currentTime = 0;
+            } else if (currentTrack) {
+                localAudio.pause();
+                localAudio.currentTime = 0;
             }
         }
 
@@ -550,8 +555,11 @@
         }
 
         function changeSpeed() {
-            if (currentTrack && currentTrack.type !== 'youtube') {
-                localPlayer.playbackRate = parseFloat(document.getElementById('speed').value);
+            const rate = parseFloat(document.getElementById('speed').value);
+            if (currentTrack && currentTrack.type === 'video') {
+                localVideo.playbackRate = rate;
+            } else if (currentTrack && currentTrack.type === 'audio') {
+                localAudio.playbackRate = rate;
             }
         }
 
@@ -564,7 +572,6 @@
             if (e.code === 'KeyF') { e.preventDefault(); toggleFullscreen(); }
         });
 
-        // ADMIN FUNCTIONS
         function openAdmin() {
             const pass = prompt("Enter Admin Password:");
             if (pass === "Ooicu812") {
@@ -617,7 +624,7 @@
 
         function exportUpdatedCode() {
             let code = `let tracks = ${JSON.stringify(tracks, null, 4)};`;
-            alert("Copy this updated tracks array and replace the old one in the script section:\n\n" + code);
+            alert("Copy this updated tracks array and replace the old one in the <script> section:\n\n" + code);
             console.log(code);
         }
 
