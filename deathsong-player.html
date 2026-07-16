@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DEATHSONG FREQUENCY</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@400;600&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        
+        .script-font { font-family: 'Cinzel', serif; letter-spacing: 0.05em; }
+        
+        /* LAYERED PARALLAX WATERMARKS */
+        .watermark-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            font-family: 'Cinzel', serif;
+            font-weight: 900;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        }
+        
+        .watermark-1 {
+            font-size: 12vw;
+            color: rgba(255, 80, 80, 0.04);
+            animation: scroll1 180s linear infinite;
+            transform: rotate(-8deg);
+        }
+        
+        .watermark-2 {
+            font-size: 8vw;
+            color: rgba(255, 100, 100, 0.03);
+            animation: scroll2 140s linear infinite;
+            transform: rotate(-8deg);
+            top: 15%;
+        }
+        
+        .watermark-3 {
+            font-size: 6vw;
+            color: rgba(255, 120, 120, 0.02);
+            animation: scroll3 100s linear infinite;
+            transform: rotate(-8deg);
+            top: 50%;
+        }
+        
+        @keyframes scroll1 { 0% { transform: translateX(0) rotate(-8deg); } 100% { transform: translateX(-50%) rotate(-8deg); } }
+        @keyframes scroll2 { 0% { transform: translateX(0) rotate(-8deg); } 100% { transform: translateX(-50%) rotate(-8deg); } }
+        @keyframes scroll3 { 0% { transform: translateX(0) rotate(-8deg); } 100% { transform: translateX(-50%) rotate(-8deg); } }
+
+        /* PARTICLE SYSTEM */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 16px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 9vw, 4.8rem);
+            color: #d5d5d5;
+            line-height: 1;
+        }
+
+        h2 {
+            font-size: clamp(2.1rem, 8vw, 3.8rem);
+            color: #ff4444;
+            text-shadow: 0 0 40px #f44;
+            margin-top: -8px;
+        }
+
+        /* VIDEO WRAPPER WITH GLOW */
+        .player-wrapper {
+            border: 6px solid #440000;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 16px;
+            position: relative;
+            box-shadow: 0 0 70px rgba(139, 0, 0, 0.85);
+            transition: box-shadow 0.1s;
+            aspect-ratio: 9 / 16;
+        }
+
+        .player-wrapper.bass-hit {
+            box-shadow: 0 0 120px rgba(255, 68, 68, 1), 0 0 70px rgba(139, 0, 0, 0.85);
+        }
+
+        iframe, video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border: none;
+        }
+
+        /* CONTROLS */
+        .controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 14px 0;
+        }
+
+        .btn {
+            background: linear-gradient(145deg, #ddd, #888);
+            color: #000;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 68, 68, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.8);
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn i {
+            margin-right: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* LIBRARY PANEL */
+        .library-panel {
+            display: none;
+            background: rgba(25, 0, 0, 0.8);
+            border: 2px solid #440000;
+            border-radius: 12px;
+            padding: 14px;
+            margin: 16px 0;
+            max-height: 380px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .library-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .library-item:hover, .library-item.active {
+            background: #330000;
+            color: #ffaaaa;
+            padding-left: 20px;
+        }
+
+        .library-item:last-child {
+            border-bottom: none;
+        }
+
+        /* INFO PANELS */
+        .panel {
+            margin-top: 16px;
+            border: 1px solid #440000;
+            border-radius: 12px;
+            padding: 16px;
+            background: rgba(25, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .panel h3 {
+            color: #ff6666;
+            font-family: 'Cinzel', serif;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        /* WAVEFORM VISUALIZER */
+        .viz-wrapper {
+            margin: 20px 0;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        #waveformViz {
+            width: 100%;
+            height: 60px;
+            display: block;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* NOW PLAYING */
+        .now-playing {
+            font-size: 1rem;
+            line-height: 1.45;
+        }
+
+        .status {
+            color: #ff8888;
+            font-size: 0.85rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 32px;
+            color: #555;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 12px; }
+            h1 { font-size: clamp(2.1rem, 9vw, 3.2rem); }
+            h2 { font-size: clamp(1.9rem, 8vw, 2.8rem); }
+            .btn { padding: 8px 13px; font-size: 0.82rem; }
+            .controls { gap: 6px; }
+            .player-wrapper { border-width: 5px; }
+            .panel { padding: 14px; }
+            .library-panel { max-height: 320px; }
+            #waveformViz { height: 40px; }
+        }
+
+        /* ADMIN PANEL */
+        #adminPanel {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 9999;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .admin-content { max-width: 800px; margin: 0 auto; }
+        .admin-btn { background:#440000; color:#fff; padding:10px 16px; margin:5px; border:none; border-radius:6px; cursor:pointer; }
+    </style>
+</head>
+<body>
+    <!-- LAYERED WATERMARKS -->
+    <div class="watermark-layer watermark-1">DEATHSONG FREQUENCY • DEATHSONG FREQUENCY • DEATHSONG FREQUENCY •</div>
+    <div class="watermark-layer watermark-2">VULGAR GRACE VULGAR GRACE VULGAR GRACE VULGAR GRACE</div>
+    <div class="watermark-layer watermark-3">DEATHSONG • DEATHSONG • DEATHSONG • DEATHSONG •</div>
+
+    <!-- PARTICLE SYSTEM -->
+    <canvas id="particleCanvas"></canvas>
+
+    <div class="container">
+        <header>
+            <h1 class="script-font">DEATHSONG</h1>
+            <h2 class="script-font">FREQUENCY</h2>
+        </header>
+
+        <!-- MAIN PLAYER -->
+        <div class="player-wrapper" id="playerWrapper">
+            <iframe id="ytplayer" width="100%" height="100%" style="display:none;" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <video id="localplayer" controls playsinline style="width:100%; height:100%;"></video>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls">
+            <button class="btn" onclick="togglePlay()"><i class="fa-solid fa-play"></i> <span>PLAY / PAUSE</span></button>
+            <button class="btn" onclick="stopMedia()"><i class="fa-solid fa-stop"></i> <span>STOP</span></button>
+            <button class="btn" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i> <span>FULLSCREEN</span></button>
+            <button class="btn" onclick="togglePIP()"><i class="fa-solid fa-rectangle"></i> <span>PIP</span></button>
+            <button class="btn" onclick="toggleLibrary()"><i class="fa-solid fa-list"></i> <span>LIBRARY</span></button>
+            <select id="speed" onchange="changeSpeed()" style="background:#222;color:#fff;border:1px solid #440000;border-radius:6px;padding:7px 11px;font-family:'Cinzel',serif;font-size:0.85rem;cursor:pointer;box-shadow:0 0 15px rgba(255,68,68,0.4);">
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+            </select>
+        </div>
+
+        <!-- LIBRARY -->
+        <div id="libraryPanel" class="library-panel">
+            <h3 style="margin-bottom:10px;color:#ff6666;">RITUAL LIBRARY</h3>
+        </div>
+
+        <!-- WAVEFORM VISUALIZER -->
+        <div class="viz-wrapper">
+            <canvas id="waveformViz"></canvas>
+        </div>
+
+        <!-- NOW PLAYING -->
+        <div class="panel">
+            <h3>NOW PLAYING</h3>
+            <div id="nowPlaying" class="now-playing">
+                DEATHSONG FREQUENCY<br>
+                <span class="status">Mixed Audio + YouTube Shorts Matrix • Ready</span>
+            </div>
+        </div>
+
+        <!-- PROJECT NOTES -->
+        <div class="panel">
+            <h3>PROJECT STATUS</h3>
+            <div style="line-height:1.65;color:#ccc;font-size:0.95rem;">
+                • Current Project Status: Active Ritual<br>
+                • All Internal Media Files Loaded<br>
+                • YouTube Shorts Video Stream Configured<br>
+                • Mobile-first • Netlify Optimized
+            </div>
+        </div>
+
+        <footer>© DEATHSONG FREQUENCY • WILLIAM DEATHSONG <span onclick="openAdmin()" style="cursor:pointer;margin-left:12px;font-size:1.3rem;padding:8px 12px;border-radius:50%;background:rgba(68,0,0,0.6);" title="Admin">🎼</span></footer>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel">
+        <div class="admin-content">
+            <h2 style="color:#ff6666;">ADMIN MODE - Deathsong Frequency</h2>
+            <p>Password protected. Changes here are for export only.</p>
+            <button class="admin-btn" onclick="closeAdmin()">Close Admin</button>
+            
+            <h3>Add New Track</h3>
+            <input id="newTitle" placeholder="Title" style="width:100%;padding:8px;margin:5px 0;background:#111;color:#fff;border:1px solid #440000;">
+            <input id="newSrc" placeholder="URL or filename" style="width:100%;padding:8px;margin:5px 0;background:#111;color:#fff;border:1px solid #440000;">
+            <select id="newType" style="padding:8px;margin:5px 0;background:#111;color:#fff;border:1px solid #440000;">
+                <option value="youtube">YouTube</option>
+                <option value="audio">Local Audio/Video</option>
+            </select>
+            <button class="admin-btn" onclick="addTrackAdmin()">Add Track</button>
+
+            <h3>Current Tracks (click to remove)</h3>
+            <div id="adminTrackList"></div>
+
+            <button class="admin-btn" onclick="exportUpdatedCode()" style="background:#006600;">Export Updated Script Section</button>
+        </div>
+    </div>
+
+    <script>
+        const ytPlayer = document.getElementById('ytplayer');
+        const localPlayer = document.getElementById('localplayer');
+        const playerWrapper = document.getElementById('playerWrapper');
+        const nowPlaying = document.getElementById('nowPlaying');
+        const libraryPanel = document.getElementById('libraryPanel');
+        const waveformCanvas = document.getElementById('waveformViz');
+        const waveCtx = waveformCanvas.getContext('2d');
+        const particleCanvas = document.getElementById('particleCanvas');
+        const particleCtx = particleCanvas.getContext('2d');
+
+        function resizeCanvases() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            waveformCanvas.width = waveformCanvas.parentElement.clientWidth;
+            waveformCanvas.height = 60;
+        }
+        resizeCanvases();
+        window.addEventListener('resize', resizeCanvases);
+
+        // FULL MASTER STREAM MATRIX - ORIGINAL YOUTUBE UNTOUCHED + ALL NEW MEDIA
+        let tracks = [ 
+            // ORIGINAL YOUTUBE - UNCHANGED ORDER
+            { title: "DEATHSONG FREQUENCY", src: "https://youtu.be/MtmpmwXnEgo", type: "youtube" },
+            { title: "VulgarGrace", src: "https://youtu.be/aYKwrtwV7QA", type: "youtube" },
+            { title: "Stormbound", src: "https://youtu.be/pzr2qTTnnhs", type: "youtube" },
+            { title: "Lakemill", src: "https://youtu.be/sEP97KoY1K8", type: "youtube" },
+            { title: "Persistence", src: "https://youtu.be/DESruuB1kco", type: "youtube" },
+            { title: "Persistence 2", src: "https://youtu.be/FslcfWaZEY0", type: "youtube" },
+            { title: "Persistence 3", src: "https://youtu.be/KLkJdReDNz4", type: "youtube" },
+            { title: "High as Fuck", src: "https://youtu.be/U5eSF0bQQvI", type: "youtube" },
+            { title: "TranstesticularMindVirus", src: "https://youtu.be/hYB5BvK7afg", type: "youtube" },
+
+            // NEW MP4 VIDEOS (in screenshot order)
+            { title: "deathsongpreface", src: "deathsongpreface.mp4", type: "video" },
+            { title: "redknight", src: "redknight.mp4", type: "video" },
+            { title: "highasfuck", src: "highasfuck.mp4", type: "video" },
+            { title: "pattycake", src: "pattycake.mp4", type: "video" },
+            { title: "tuesday", src: "tuesday.mp4", type: "video" },
+            { title: "nobody", src: "nobody.mp4", type: "video" },
+            { title: "deathsongresistance", src: "deathsongresistance.mp4", type: "video" },
+            { title: "drink4evil", src: "drink4evil.mp4", type: "video" },
+            { title: "niggamike", src: "niggamike.mp4", type: "video" },
+            { title: "shewhispers", src: "shewhispers.mp4", type: "video" },
+            { title: "pigeonperil", src: "pigeonperil.mp4", type: "video" },
+            { title: "badbastard", src: "badbastard.mp4", type: "video" },
+            { title: "deathsong", src: "deathsong.mp4", type: "video" },
+            { title: "openingsequence", src: "openingsequence.mp4", type: "video" },
+            { title: "Stormbound", src: "Stormbound .mp4", type: "video" },
+            { title: "Vic", src: "Vic.mp4", type: "video" },
+            { title: "Hi as f k", src: "Hi as f k.mp4", type: "video" },
+            { title: "Persistence 2", src: "Persistence 2.mp4", type: "video" },
+            { title: "transtesticularmindvirus", src: "transtesticularmindvirus.mp4", type: "video" },
+            { title: "Bildo-Fleshlight", src: "Bildo-Fleshlight.mp4", type: "video" },
+            { title: "deathsongtedtalk", src: "deathsongtedtalk.mp4", type: "video" },
+            { title: "rain", src: "rain.mp4", type: "video" },
+            { title: "hi mike", src: "hi mike.mp4", type: "video" },
+            { title: "deathsongcensored", src: "deathsongcensored.mp4", type: "video" },
+            { title: "toiletseatfight", src: "toiletseatfight.mp4", type: "video" },
+            { title: "buddy", src: "buddy.mp4", type: "video" },
+            { title: "No-Bo", src: "No-Bo.mp4", type: "video" },
+            { title: "Deathsong Frequency-weird", src: "Deathsong Frequency-weird....mp4", type: "video" },
+            { title: "breaking-prompt", src: "breaking-prompt.mp4", type: "video" },
+            { title: "scambait", src: "scambait.mp4", type: "video" },
+            { title: "generaldeathsong", src: "generaldeathsong.mp4", type: "video" },
+            { title: "bildo", src: "bildo.mp4", type: "video" },
+            { title: "deathsongsdoor", src: "deathsongsdoor.mp4", type: "video" },
+
+            // ORIGINAL + NEW MP3 AUDIO
+            { title: "Fleshlight Drawer", src: "Fleshlight-Drawer.MP3", type: "audio" },
+            { title: "transmindvirus", src: "transmindvirus.MP3", type: "audio" },
+            { title: "First-Day Oxygen", src: "First-Day-Oxygen.MP3", type: "audio" },
+            { title: "Corner-Plot Sermon", src: "Corner-Plot-Sermon.MP3", type: "audio" },
+            { title: "whoami", src: "whoami.mp3", type: "audio" },
+            { title: "nobody", src: "nobody.mp3", type: "audio" },
+            { title: "Corner Plot Sermon (Master)", src: "Corner Plot Sermon.mp3", type: "audio" },
+            { title: "Left Nut Vendetta", src: "Left Nut Vendetta.mp3", type: "audio" },
+            { title: "williamdeathsong", src: "williamdeathsong.mp3", type: "audio" },
+            { title: "billy-barbeau_buggie", src: "billy-barbeau_buggie.mp3", type: "audio" },
+            { title: "The General's Last Stunt", src: "The General's Last Stunt.mp3", type: "audio" },
+            { title: "stormbound", src: "stormbound (1).mp3", type: "audio" }
+        ];
+
+        let currentTrack = null;
+
+        function buildLibrary() {
+            libraryPanel.innerHTML = `<h3 style="margin-bottom:10px;color:#ff6666;">RITUAL LIBRARY</h3>`;
+            tracks.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = 'library-item';
+                let icon = 'fa-youtube';
+                if (track.type === 'audio') icon = 'fa-music';
+                else if (track.type === 'video') icon = 'fa-video';
+                item.innerHTML = `<i class="fa-solid ${icon}" style="color:#ff4444;"></i><span> ${track.title}</span>`;
+                item.onclick = () => {
+                    loadTrack(track, item);
+                    if (window.innerWidth < 768) libraryPanel.style.display = 'none';
+                };
+                libraryPanel.appendChild(item);
+            });
+        }
+
+        function loadTrack(track, element = null) {
+            currentTrack = track;
+            document.querySelectorAll('.library-item').forEach(el => el.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            ytPlayer.style.display = 'none';
+            localPlayer.style.display = 'none';
+
+            if (track.type === 'youtube') {
+                let embedUrl = track.src;
+                if (embedUrl.includes('youtu.be/')) {
+                    embedUrl = embedUrl.replace('youtu.be/', 'youtube.com/embed/');
+                } else if (embedUrl.includes('watch?v=')) {
+                    embedUrl = embedUrl.replace('watch?v=', 'embed/');
+                }
+                ytPlayer.src = embedUrl + "?autoplay=1&modestbranding=1&rel=0";
+                ytPlayer.style.display = 'block';
+                nowPlaying.innerHTML = `${track.title}<br><span class="status">YouTube Video Stream</span>`;
+            } else {
+                localPlayer.src = track.src;
+                localPlayer.style.display = 'block';
+                const statusText = track.type === 'audio' ? 'Local Audio Track' : 'Local Video';
+                nowPlaying.innerHTML = `\( {track.title}<br><span class="status"> \){statusText}</span>`;
+                localPlayer.play().catch(() => {});
+            }
+        }
+
+        function togglePlay() {
+            if (!currentTrack) {
+                loadTrack(tracks[0]);
+                return;
+            }
+            if (currentTrack.type === 'youtube') {
+                ytPlayer.src = ytPlayer.src;
+            } else {
+                if (localPlayer.paused) localPlayer.play();
+                else localPlayer.pause();
+            }
+        }
+
+        function stopMedia() {
+            if (currentTrack && currentTrack.type === 'youtube') {
+                ytPlayer.src = '';
+            } else {
+                localPlayer.pause();
+                localPlayer.currentTime = 0;
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                playerWrapper.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function togglePIP() {
+            toggleFullscreen();
+        }
+
+        function changeSpeed() {
+            if (currentTrack && currentTrack.type !== 'youtube') {
+                localPlayer.playbackRate = parseFloat(document.getElementById('speed').value);
+            }
+        }
+
+        function toggleLibrary() {
+            libraryPanel.style.display = libraryPanel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+            if (e.code === 'KeyF') { e.preventDefault(); toggleFullscreen(); }
+        });
+
+        // ADMIN FUNCTIONS
+        function openAdmin() {
+            const pass = prompt("Enter Admin Password:");
+            if (pass === "Ooicu812") {
+                document.getElementById('adminPanel').style.display = 'block';
+                renderAdminTracks();
+            } else {
+                alert("Wrong password.");
+            }
+        }
+
+        function closeAdmin() {
+            document.getElementById('adminPanel').style.display = 'none';
+        }
+
+        function renderAdminTracks() {
+            const list = document.getElementById('adminTrackList');
+            list.innerHTML = '';
+            tracks.forEach((track, i) => {
+                const div = document.createElement('div');
+                div.style.padding = '8px';
+                div.style.borderBottom = '1px solid #440000';
+                div.innerHTML = `\( {track.title} <button class="admin-btn" onclick="removeTrack( \){i}); renderAdminTracks()">Remove</button>`;
+                list.appendChild(div);
+            });
+        }
+
+        function addTrackAdmin() {
+            const title = document.getElementById('newTitle').value.trim();
+            const src = document.getElementById('newSrc').value.trim();
+            const typeSelect = document.getElementById('newType').value;
+            if (!title || !src) return alert("Title and source required.");
+            
+            tracks.push({
+                title: title,
+                src: src,
+                type: typeSelect === 'youtube' ? 'youtube' : 'audio'
+            });
+            renderAdminTracks();
+            buildLibrary();
+            alert("Track added. Use Export when finished.");
+        }
+
+        function removeTrack(index) {
+            if (confirm("Remove this track?")) {
+                tracks.splice(index, 1);
+                renderAdminTracks();
+                buildLibrary();
+            }
+        }
+
+        function exportUpdatedCode() {
+            let code = `let tracks = ${JSON.stringify(tracks, null, 4)};`;
+            alert("Copy this updated tracks array and replace the old one in the script section:\n\n" + code);
+            console.log(code);
+        }
+
+        function init() {
+            buildLibrary();
+            loadTrack(tracks[0]);
+        }
+
+        init();
+    </script>
+</body>
+</html>
